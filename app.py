@@ -84,7 +84,7 @@ st.markdown(
         RAMEDICAS S.A.S.
     </h1>
     <h3 style="text-align: center; font-family: Arial, sans-serif; color: #3A86FF;">
-        Generador de Alternativas para Faltantes
+        Generador de Alternativas para Faltantes FOMAG
     </h3>
     <p style="text-align: center; font-family: Arial, sans-serif; color: #6B6B6B;">
         Esta herramienta te permite buscar el código alternativa para cada faltante de los pedidos en Ramédicas con su respectivo inventario actual.
