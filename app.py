@@ -8,7 +8,7 @@ PLANTILLA_URL = "https://docs.google.com/spreadsheets/d/1CPMBfCiuXq2_l8KY68HgexD
 
 # Función para cargar archivo de inventario desde Google Drive
 def load_inventory_file():
-    inventario_url = "https://docs.google.com/spreadsheets/d/1DVcPPILcqR0sxBZZAOt50lQzoKhoLCEx/export?format=xlsx"
+    inventario_url = "https://docs.google.com/spreadsheets/d/1WV4la88gTl6OUgqQ5UM0IztNBn_k4VrC/export?format=xlsx&sheet=Hoja3"
     inventario_api_df = pd.read_excel(inventario_url, sheet_name="Hoja3")
     return inventario_api_df
 
@@ -84,7 +84,7 @@ st.markdown(
         RAMEDICAS S.A.S.
     </h1>
     <h3 style="text-align: center; font-family: Arial, sans-serif; color: #3A86FF;">
-        Generador de Alternativas para Faltantes FOMAG
+        Generador de Alternativas para Faltantes
     </h3>
     <p style="text-align: center; font-family: Arial, sans-serif; color: #6B6B6B;">
         Esta herramienta te permite buscar el código alternativa para cada faltante de los pedidos en Ramédicas con su respectivo inventario actual.
@@ -128,4 +128,3 @@ if uploaded_file:
         st.write("Resultados de alternativas encontradas:", resultado_df)
     else:
         st.warning("No se encontraron alternativas para los faltantes.")
-
