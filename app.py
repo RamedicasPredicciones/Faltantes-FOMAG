@@ -4,11 +4,11 @@ import math
 from io import BytesIO
 
 # Enlace de la plantilla en Google Sheets
-PLANTILLA_URL = "https://docs.google.com/spreadsheets/d/1DWI94qJuuB7wK5aMeFk3CKBtjXOVn1iU/export?format=xlsx"
+PLANTILLA_URL = "https://docs.google.com/spreadsheets/d/1CPMBfCiuXq2_l8KY68HgexD-kyNVJ2Ml/export?format=xlsx"
 
 # Función para cargar archivo de inventario desde Google Drive
 def load_inventory_file():
-    inventario_url = "https://docs.google.com/spreadsheets/d/1DVcPPILcqR0sxBZZAOt50lQzoKhoLCEx/export?format=xlsx&sheet=Hoja3"
+    inventario_url = "https://docs.google.com/spreadsheets/d/1WV4la88gTl6OUgqQ5UM0IztNBn_k4VrC/export?format=xlsx"
     inventario_api_df = pd.read_excel(inventario_url, sheet_name="Hoja3")
     return inventario_api_df
 
@@ -34,7 +34,7 @@ def procesar_faltantes(faltantes_df, inventario_api_df, columnas_adicionales, bo
     alternativas_disponibles_df.rename(columns={
         'codart': 'codart_alternativa',
         'opcion': 'opcion_alternativa',
-        'emb': 'embalaje_alternativa'  # Cambié 'emb' por 'embalaje_alternativa'
+        'embalaje': 'embalaje_alternativa'
     }, inplace=True)
 
     alternativas_disponibles_df = pd.merge(
@@ -44,7 +44,7 @@ def procesar_faltantes(faltantes_df, inventario_api_df, columnas_adicionales, bo
         how='inner'
     )
 
-    # Filtrar registros donde opcion_alternativa sea mayor a 0
+    # Filtrar registros donde `opcion_alternativa` sea mayor a 0
     alternativas_disponibles_df = alternativas_disponibles_df[alternativas_disponibles_df['opcion_alternativa'] > 0]
 
     # Agregar columna de cantidad necesaria ajustada por embalaje
@@ -118,4 +118,7 @@ uploaded_file = st.file_uploader("Sube tu archivo de faltantes", type="xlsx")
 
 if uploaded_file:
     faltantes_df = pd.read_excel(uploaded_file)
-    ...
+    inventario_api_df = load_inventory_file()  # Cargar inventario con el nuevo enlace
+    # Aquí puedes continuar con la lógica para procesar los datos
+    resultado_df = procesar_faltantes(faltantes_df, inventario_api_df, columnas_adicionales=[], bodega_seleccionada=None)
+    st.write(resultado_df)  # Muestra el resultado procesado
