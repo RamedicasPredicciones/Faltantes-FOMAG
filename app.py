@@ -4,12 +4,12 @@ import math
 from io import BytesIO
 
 # Enlace de la plantilla en Google Sheets
-PLANTILLA_URL = "https://docs.google.com/spreadsheets/d/1CPMBfCiuXq2_l8KY68HgexD-kyNVJ2Ml/export?format=xlsx"
+PLANTILLA_URL = "https://docs.google.com/spreadsheets/d/1DWI94qJuuB7wK5aMeFk3CKBtjXOVn1iU/export?format=xlsx"  # Cambié el enlace aquí
 
 # Función para cargar archivo de inventario desde Google Drive
 def load_inventory_file():
-    inventario_url = "https://docs.google.com/spreadsheets/d/1WV4la88gTl6OUgqQ5UM0IztNBn_k4VrC/export?format=xlsx&sheet=Hoja3"
-    inventario_api_df = pd.read_excel(inventario_url, sheet_name="Hoja3")
+    inventario_url = "https://docs.google.com/spreadsheets/d/1DVcPPILcqR0sxBZZAOt50lQzoKhoLCEx/export?format=xlsx"
+    inventario_api_df = pd.read_excel(inventario_url, sheet_name="Hoja3")  # El URL del inventario permanece igual
     return inventario_api_df
 
 # Función para procesar el archivo de faltantes
