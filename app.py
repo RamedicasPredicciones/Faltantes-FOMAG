@@ -1,77 +1,72 @@
-import streamlit as st
-import pandas as pd
-
-# Cargar archivos privados de manera segura
-@st.cache_data
-def load_private_files():
-    maestro_moleculas_df = pd.read_excel('Maestro_Moleculas.xlsx')
-    inventario_api_df = pd.read_excel('Inventario.xlsx')
-    return maestro_moleculas_df, inventario_api_df
-
-# Función para procesar el archivo de faltantes y generar el resultado
-def procesar_faltantes(faltantes_df, maestro_moleculas_df, inventario_api_df):
+# Función para procesar el archivo de faltantes
+def procesar_faltantes(faltantes_df, inventario_api_df, columnas_adicionales, bodega_seleccionada):
     faltantes_df.columns = faltantes_df.columns.str.lower().str.strip()
-    maestro_moleculas_df.columns = maestro_moleculas_df.columns.str.lower().str.strip()
     inventario_api_df.columns = inventario_api_df.columns.str.lower().str.strip()
 
+    # Verificar que el archivo de faltantes tiene las columnas necesarias
+    columnas_necesarias = {'cur', 'codart', 'faltante', 'embalaje'}
+    if not columnas_necesarias.issubset(faltantes_df.columns):
+        st.error(f"El archivo de faltantes debe contener las columnas: {', '.join(columnas_necesarias)}")
+        return pd.DataFrame()  # Devuelve un DataFrame vacío si faltan columnas
+
+    # Filtrar las alternativas del inventario basadas en los códigos de cur
     cur_faltantes = faltantes_df['cur'].unique()
-    codart_faltantes = faltantes_df['codart'].unique()
+    alternativas_inventario_df = inventario_api_df[inventario_api_df['cur'].isin(cur_faltantes)]
 
-    alternativas_df = maestro_moleculas_df[maestro_moleculas_df['cur'].isin(cur_faltantes)]
+    if bodega_seleccionada:
+        alternativas_inventario_df = alternativas_inventario_df[alternativas_inventario_df['bodega'].isin(bodega_seleccionada)]
 
-    alternativas_inventario_df = pd.merge(
-        alternativas_df,
-        inventario_api_df,
-        on='cur',
-        how='inner',
-        suffixes=('_alternativas', '_inventario')
-    )
+    # Asegurarse de que solo queden alternativas con unidades disponibles
+    alternativas_disponibles_df = alternativas_inventario_df[alternativas_inventario_df['unidadespresentacionlote'] > 0]
 
-    alternativas_disponibles_df = alternativas_inventario_df[
-        (alternativas_inventario_df['cantidad'] > 0) &
-        (alternativas_inventario_df['codart_alternativas'].isin(codart_faltantes))
-    ]
-
-    columnas_deseadas = [
-        'codart_alternativas', 'cur', 'opcion_inventario', 'codart_inventario', 'cantidad', 'bodega'
-    ]
-    columnas_presentes = [col for col in columnas_deseadas if col in alternativas_disponibles_df.columns]
-    alternativas_disponibles_df = alternativas_disponibles_df[columnas_presentes]
-
+    # Renombrar las columnas de las alternativas
     alternativas_disponibles_df.rename(columns={
-        'codart_alternativas': 'codart_faltante',
-        'opcion_inventario': 'opcion_alternativa',
-        'codart_inventario': 'codart_alternativa'
+        'codart': 'codart_alternativa',
+        'opcion': 'opcion_alternativa',
+        'embalaje': 'embalaje_alternativa'
     }, inplace=True)
 
-    resultado_final_df = pd.merge(
-        faltantes_df[['cur', 'codart']],
+    # Fusionar las alternativas con el archivo de faltantes
+    alternativas_disponibles_df = pd.merge(
+        faltantes_df[['cur', 'codart', 'faltante', 'embalaje']],
         alternativas_disponibles_df,
-        left_on=['cur', 'codart'],
-        right_on=['cur', 'codart_faltante'],
+        on='cur',
         how='inner'
     )
 
-    return resultado_final_df
+    # Filtrar registros donde la opción alternativa sea válida
+    alternativas_disponibles_df = alternativas_disponibles_df[alternativas_disponibles_df['opcion_alternativa'] > 0]
 
-# Streamlit UI
-st.title('Generador de Alternativas de Faltantes')
-
-uploaded_file = st.file_uploader("Sube tu archivo de faltantes", type="xlsx")
-
-if uploaded_file:
-    faltantes_df = pd.read_excel(uploaded_file)
-    maestro_moleculas_df, inventario_api_df = load_private_files()
-
-    resultado_final_df = procesar_faltantes(faltantes_df, maestro_moleculas_df, inventario_api_df)
-
-    st.write("Archivo procesado correctamente.")
-    st.dataframe(resultado_final_df)
-
-    # Botón para descargar el archivo generado
-    st.download_button(
-        label="Descargar archivo de alternativas",
-        data=resultado_final_df.to_excel(index=False, engine='openpyxl'),
-        file_name='alternativas_disponibles.xlsx',
-        mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    # Calcular la cantidad necesaria ajustada por embalaje
+    alternativas_disponibles_df['cantidad_necesaria'] = alternativas_disponibles_df.apply(
+        lambda row: math.ceil(row['faltante'] * row['embalaje'] / row['embalaje_alternativa'])
+        if pd.notnull(row['embalaje']) and pd.notnull(row['embalaje_alternativa']) and row['embalaje_alternativa'] > 0
+        else None,
+        axis=1
     )
+
+    # Ordenar por artículo y unidades disponibles
+    alternativas_disponibles_df.sort_values(by=['codart', 'unidadespresentacionlote'], inplace=True)
+
+    # Seleccionar las mejores alternativas
+    mejores_alternativas = []
+    for codart_faltante, group in alternativas_disponibles_df.groupby('codart'):
+        faltante_cantidad = group['faltante'].iloc[0]
+
+        # Buscar en la bodega seleccionada
+        mejor_opcion_bodega = group[group['unidadespresentacionlote'] >= faltante_cantidad]
+        mejor_opcion = mejor_opcion_bodega.head(1) if not mejor_opcion_bodega.empty else group.nlargest(1, 'unidadespresentacionlote')
+        
+        mejores_alternativas.append(mejor_opcion.iloc[0])
+
+    # Crear el DataFrame final con las mejores alternativas
+    resultado_final_df = pd.DataFrame(mejores_alternativas)
+
+    # Asegurarse de incluir las columnas adicionales si están presentes
+    columnas_finales = ['cur', 'codart', 'faltante', 'embalaje', 'codart_alternativa', 'opcion_alternativa', 
+                        'embalaje_alternativa', 'cantidad_necesaria', 'unidadespresentacionlote', 'bodega', 'carta']
+    columnas_finales.extend([col.lower() for col in columnas_adicionales])
+    columnas_presentes = [col for col in columnas_finales if col in resultado_final_df.columns]
+    resultado_final_df = resultado_final_df[columnas_presentes]
+
+    return resultado_final_df
