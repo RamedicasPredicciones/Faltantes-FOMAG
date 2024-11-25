@@ -24,6 +24,11 @@ def procesar_faltantes(faltantes_df, inventario_api_df, columnas_adicionales, bo
         st.error(f"El archivo de faltantes debe contener las columnas: {', '.join(columnas_necesarias)}")
         return pd.DataFrame()  # Devuelve un DataFrame vacío si faltan columnas
 
+    # Comprobar que las columnas existen antes de usarlas
+    if 'cur' not in inventario_api_df.columns or 'codart' not in inventario_api_df.columns:
+        st.error("El archivo de inventario debe contener las columnas 'cur' y 'codart'.")
+        return pd.DataFrame()
+
     cur_faltantes = faltantes_df['cur'].unique()
     alternativas_inventario_df = inventario_api_df[inventario_api_df['cur'].isin(cur_faltantes)]
 
@@ -119,13 +124,7 @@ uploaded_file = st.file_uploader("Sube tu archivo de faltantes", type="xlsx")
 
 if uploaded_file:
     faltantes_df = pd.read_excel(uploaded_file)
-    inventario_api_df = load_inventory_file()
-    columnas_adicionales = []  # Aquí puedes agregar las columnas adicionales si las tienes
-    bodega_seleccionada = []  # Puedes personalizar la selección de bodegas
-    resultado_df = procesar_faltantes(faltantes_df, inventario_api_df, columnas_adicionales, bodega_seleccionada)
-
-    # Mostrar el resultado final
-    if not resultado_df.empty:
-        st.write("Resultados de alternativas encontradas:", resultado_df)
-    else:
-        st.warning("No se encontraron alternativas para los faltantes.")
+    # Procesar el archivo de faltantes con la función
+    bodega_seleccionada = None  # Asegúrate de establecer la bodega si es necesario
+    resultado_df = procesar_faltantes(faltantes_df, load_inventory_file(), [], bodega_seleccionada)
+    st.write(resultado_df)
