@@ -44,7 +44,7 @@ def procesar_faltantes(faltantes_df, inventario_api_df, columnas_adicionales, bo
         how='inner'
     )
 
-    # Filtrar registros donde `opcion_alternativa` sea mayor a 0
+    # Filtrar registros donde opcion_alternativa sea mayor a 0
     alternativas_disponibles_df = alternativas_disponibles_df[alternativas_disponibles_df['opcion_alternativa'] > 0]
 
     # Agregar columna de cantidad necesaria ajustada por embalaje
@@ -118,7 +118,35 @@ uploaded_file = st.file_uploader("Sube tu archivo de faltantes", type="xlsx")
 
 if uploaded_file:
     faltantes_df = pd.read_excel(uploaded_file)
-    inventario_api_df = load_inventory_file()  # Cargar inventario con el nuevo enlace
-    # Aquí puedes continuar con la lógica para procesar los datos
-    resultado_df = procesar_faltantes(faltantes_df, inventario_api_df, columnas_adicionales=[], bodega_seleccionada=None)
-    st.write(resultado_df)  # Muestra el resultado procesado
+    inventario_api_df = load_inventory_file()
+
+    bodegas_disponibles = inventario_api_df['bodega'].unique().tolist()
+    bodega_seleccionada = st.multiselect("Seleccione la bodega", options=bodegas_disponibles, default=[])
+
+    columnas_adicionales = st.multiselect(
+        "Selecciona columnas adicionales para incluir en el archivo final:",
+        options=["presentacionart", "numlote", "fechavencelote"],
+        default=[]
+    )
+
+    resultado_final_df = procesar_faltantes(faltantes_df, inventario_api_df, columnas_adicionales, bodega_seleccionada)
+
+    if not resultado_final_df.empty:
+        st.write("Archivo procesado correctamente.")
+        st.dataframe(resultado_final_df)
+
+        # Función para exportar a Excel
+        def to_excel(df):
+            output = BytesIO()
+            with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                df.to_excel(writer, index=False, sheet_name='Alternativas')
+            return output.getvalue()
+
+        st.download_button(
+            label="Descargar archivo de alternativas",
+            data=to_excel(resultado_final_df),
+            file_name='alternativas_disponibles.xlsx',
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+
+    
