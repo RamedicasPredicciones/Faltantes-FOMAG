@@ -8,9 +8,9 @@ PLANTILLA_URL = "https://docs.google.com/spreadsheets/d/1CPMBfCiuXq2_l8KY68HgexD
 
 # Función para cargar archivo de inventario desde Google Drive
 def load_inventory_file():
-inventario_url = "https://docs.google.com/spreadsheets/d/1DVcPPILcqR0sxBZZAOt50lQzoKhoLCEx/export?format=xlsx&sheet=Hoja3"
-inventario_api_df = pd.read_excel(inventario_url, sheet_name="Hoja3")
-
+    # Enlace de la nueva plantilla en Google Sheets
+    inventario_url = "https://docs.google.com/spreadsheets/d/1DVcPPILcqR0sxBZZAOt50lQzoKhoLCEx/export?format=xlsx&sheet=Hoja3"
+    inventario_api_df = pd.read_excel(inventario_url, sheet_name="Hoja3")
     return inventario_api_df
 
 # Función para procesar el archivo de faltantes
